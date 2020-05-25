@@ -1,11 +1,47 @@
 #!/bin/env python
 # _*_ coding: utf-8 _*_
 
+import os
 from kubernetes import client, config
+import tokens
+from urllib3.exceptions import InsecureRequestWarning
+from urllib3 import disable_warnings
 from openpyxl import Workbook, load_workbook
 import time
 
-config.load_kube_config(config_file="d:/python_projects/inspection/config")
+
+class GetAllSources(object):
+    def __init__(self):
+        pass
+
+    def auth(self, mode, kubeconfig_file=None, token=None, **kwargs):
+        if mode is 'kubeconfig':
+            if os.path.isfile(kubeconfig_file):
+                config.load_kube_config(config_file=kubeconfig_file)
+        elif mode is 'token':
+            if isinstance(token, str):
+                configuration = client.Configuration()
+                configuration.host = kwargs.get('host')
+                configuration.api_key = {'authorization': 'Bearer ' + kwargs.get('token')}
+                configuration.verify_ssl = False
+                client.Configuration.set_default(configuration)
+                # 禁用安全请求警告
+                disable_warnings(InsecureRequestWarning)
+        else:
+            return "Please set the authentication mode: kubeconfig or token"
+
+
+# 1.使用kubeconfig认证
+# config.load_kube_config(config_file="d:/python_projects/inspection/config")
+
+# 2.使用token认证
+configuration = client.Configuration()
+configuration.host = tokens.production_envs[0].get('host')
+configuration.api_key = {'authorization': 'Bearer ' + tokens.production_envs[0].get('token')}
+configuration.verify_ssl = False
+client.Configuration.set_default(configuration)
+# 禁用安全请求警告
+disable_warnings(InsecureRequestWarning)
 
 # 创建v1对象
 v1 = client.CoreV1Api()
@@ -56,13 +92,12 @@ cronjob_num = len(rs4.list_cron_job_for_all_namespaces().items)
 # 控制器总数
 total_num = cronjob_num + job_num + deploy_num + ds_num + statefulset_num + rc_num + rs_num
 
-
 # for pod in v1.list_pod_for_all_namespaces().items:
 #     if pod.metadata.name == "pi-85hhr":
 #         print(pod)
 
 # event = v1.list_event_for_all_namespaces().items[0]
-print(v1.list_event_for_all_namespaces().items)
+# print(v1.list_pod_for_all_namespaces())
 
 #   config_dict=yaml.load(f),
 # Traceback (most recent call last):
@@ -72,25 +107,25 @@ print(v1.list_event_for_all_namespaces().items)
 
 
 # if __name__ == '__main__':
-    # # 加载现有excel文件（必须是xlsx后缀）
-    # path = "C:\\Users\\Administrator\\Desktop\\test.xlsx"
-    # book = load_workbook(path)
-    #
-    # # 获取所有sheet名称
-    # print(book.get_sheet_names())
-
-    # # 激活某个sheet(获取该sheet的index，然后将index赋值给active)
-    # sheet1 = book.get_sheet_by_name("5月19日")
-    # book.active = book.get_index(sheet1)
-    # 打印当前的活动的sheet
-    # print(book.active)
-
-    # 复制sheet
-    # book.copy_worksheet(book.active)
-    # active_sheet = book.active
-
-
-    # # 向单元格中写入数据并保存
-    # active_sheet['D6'] = "测试"
-    # active_sheet['B16'] = "19:00  测试  问题：打法胜多负少发送给\n顶格换行\n  换行空两格（中文换行）"
-    # book.save(path)
+#     # 加载现有excel文件（必须是xlsx后缀）
+#     path = "C:\\Users\\Administrator\\Desktop\\test.xlsx"
+#     book = load_workbook(path)
+#
+#     # 获取所有sheet名称
+#     print(book.get_sheet_names())
+#
+#     # 激活某个sheet(获取该sheet的index，然后将index赋值给active)
+#     sheet1 = book.get_sheet_by_name("5月19日")
+#     book.active = book.get_index(sheet1)
+#     # 打印当前的活动的sheet
+#     print(book.active)
+#
+#     # 复制sheet
+#     book.copy_worksheet(book.active)
+#     active_sheet = book.active
+#
+#
+#     # 向单元格中写入数据并保存
+#     active_sheet['D6'] = "测试"
+#     active_sheet['B16'] = "19:00  测试  问题：打法胜多负少发送给\n顶格换行\n  换行空两格（中文换行）"
+#     book.save(path)
