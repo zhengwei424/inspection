@@ -14,34 +14,26 @@ class GetAllSources(object):
     def __init__(self):
         pass
 
-    def auth(self, mode, kubeconfig_file=None, token=None, **kwargs):
+    def auth(self, mode, kubeconfig_file=None, **kwargs):
         if mode is 'kubeconfig':
             if os.path.isfile(kubeconfig_file):
                 config.load_kube_config(config_file=kubeconfig_file)
         elif mode is 'token':
-            if isinstance(token, str):
+            if isinstance(kwargs.get('kwargs').get('token'), str):
                 configuration = client.Configuration()
-                configuration.host = kwargs.get('host')
-                configuration.api_key = {'authorization': 'Bearer ' + kwargs.get('token')}
+                configuration.host = kwargs.get('kwargs').get('host')
+                configuration.api_key = {'authorization': 'Bearer ' + kwargs.get('kwargs').get('token')}
                 configuration.verify_ssl = False
                 client.Configuration.set_default(configuration)
                 # 禁用安全请求警告
                 disable_warnings(InsecureRequestWarning)
         else:
-            return "Please set the authentication mode: kubeconfig or token"
+            print("Please set the authentication mode: kubeconfig or token")
 
 
-# 1.使用kubeconfig认证
-# config.load_kube_config(config_file="d:/python_projects/inspection/config")
-
-# 2.使用token认证
-configuration = client.Configuration()
-configuration.host = tokens.production_envs[0].get('host')
-configuration.api_key = {'authorization': 'Bearer ' + tokens.production_envs[0].get('token')}
-configuration.verify_ssl = False
-client.Configuration.set_default(configuration)
-# 禁用安全请求警告
-disable_warnings(InsecureRequestWarning)
+test = GetAllSources()
+# test.auth(mode='kubeconfig', kubeconfig_file='config')
+test.auth(mode='token', kwargs=tokens.production_envs[0])
 
 # 创建v1对象
 v1 = client.CoreV1Api()
@@ -96,15 +88,30 @@ total_num = cronjob_num + job_num + deploy_num + ds_num + statefulset_num + rc_n
 #     if pod.metadata.name == "pi-85hhr":
 #         print(pod)
 
-# event = v1.list_event_for_all_namespaces().items[0]
-# print(v1.list_pod_for_all_namespaces())
+event = v1.list_event_for_all_namespaces().items[0]
 
-#   config_dict=yaml.load(f),
-# Traceback (most recent call last):
-#   File "D:/python_projects/inspection/test.py", line 65, in <module>
-#     print(v1.list_event_for_all_namespaces().items[0])
-# IndexError: list index out of range
+pods = []
+pod_events = [{'name': '', 'events': []}, ]
 
+for event in v1.list_event_for_all_namespaces().items:
+    if event.involved_object.kind == 'Pod':
+        if event.involved_object.name not in pods:
+            pods.append(event.involved_object.name)
+
+for i in range(len(pods)):
+    pod_events[i]['name'] = pods[i]
+    print(type(pod_events[i]['events']))
+    # for event in v1.list_event_for_all_namespaces().items:
+    #     a = []
+    #     if event.involved_object.kind == 'Pod' and event.involved_object.name == pods[i]:
+    #         a.append(event.message)
+    # pod_events[i]['events'] = a
+# if event.involved_object.name in pods:
+#     pod_events[index]['name'] = event.involved_object.name
+#     pod_events[index]['events'].append(event.message)
+
+print(pods)
+print(pod_events)
 
 # if __name__ == '__main__':
 #     # 加载现有excel文件（必须是xlsx后缀）
