@@ -6,12 +6,11 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-kubernetes = "==5.0"
-pprint = "*"
+kubernetes = "*"
 openpyxl = "*"
-xlrd = "*"
-xlwt = "*"
 json = "*"
+json-py = "*"
+os = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.8"
